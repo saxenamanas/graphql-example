@@ -1,4 +1,5 @@
 import { GraphQLServer } from 'graphql-yoga';
+import { v4 as uuidv4 } from 'uuid';
 
 const users = [
     {
@@ -66,6 +67,11 @@ const typeDefs = `
         posts(query:String):[Post!]!
         comments:[Comment!]!
     }
+    type Mutation{
+        createUser(email:String!,name:String!,age:String):User!
+        createPost(author:String!,title:String!,body:String!,published:Boolean!):Post!
+        createComment(comment:String!,author:String!,post:String!):Comment!
+    }
     type Post{
         id:ID!
         title:String!
@@ -88,7 +94,6 @@ const typeDefs = `
         post:Post!
     }
 `
-
 const resolvers = {
     Query: {
         users(parent, args, ctx, info) {
@@ -155,6 +160,44 @@ const resolvers = {
                 return post.id==parent.post
             })
         }
+    },
+    Mutation:{
+        createUser(parent,args,ctx,info){
+            const isTaken = users.some(ele=>ele.email ==args.email)
+            if(isTaken)
+                throw new Error('Email exists')
+            const user = {
+                id:uuidv4(),
+                ...args
+            }
+            users.push(user);
+            return user;
+        },
+        createPost(parents,args,ctx,info){
+            const isValid = users.some(user=>user.id==args.author);
+            if(!isValid)
+                throw new Error('Invalid User')
+            const post = {
+                id:uuidv4(),
+                ...args
+            }
+            posts.push(post);
+            return post;
+        },
+        createComment(parents,args,ctx,info){
+            const isValid = users.some(user=>user.id==args.author);
+            console.log(args)
+            if(!isValid)
+                throw new Error('Error')
+            const comment = {
+                id:uuidv4(),
+                ...args,
+            }
+            comments.push(comment);
+            return comment
+        }
+        
+        
     }
 }
 
